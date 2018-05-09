@@ -1,8 +1,6 @@
+import paho_mqtt_client_manager
 
 
 class Homie():
-    def __init__(
-        async_publish,
-        async_subscribe,
-        async_unsubscribe
-    ):
+    def __init__():
+        None

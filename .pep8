@@ -1,0 +1,4 @@
+[pep8]
+indent-size=4
+ignore = E702
+max-line-length = 160

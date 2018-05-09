@@ -18,6 +18,7 @@ SubscribePayloadType = Union[str, bytes]  # Only bytes if encoding is None
 MessageCallbackType = Callable[[str, SubscribePayloadType, int], None]
 
 # Consts
+DEFAULT_QOS = 0
 MAX_RECONNECT_WAIT = 300  # seconds
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,26 +33,42 @@ class Subscription(object):
     encoding = attr.ib(type=str, default='utf-8')
 
 
-class MQTT():
+class MQTTWrapper():
     """MQTT client wrapper."""
 
     def __init__(self, mqtt_client: MQTTClient):
         self.client = mqtt_client  # type: MQTTClient
         self.subscriptions = []  # type: List[Subscription]
         self._lock = asyncio.Lock()
+        self.connected = False
 
         self.client.on_connect = self._mqtt_on_connect
         self.client.on_disconnect = self._mqtt_on_disconnect
         self.client.on_message = self._mqtt_on_message
 
-    async def async_publish(self, topic: str, payload: PublishPayloadType, qos: int, retain: bool) -> None:
-        """Publish a MQTT message. This method must be run in the event loop and returns a coroutine."""
+    async def async_publish(self, topic: str, payload: PublishPayloadType, qos: int = DEFAULT_QOS, retain: bool = False) -> int:
+        """Publish a MQTT message."""
 
         async with self._lock:
-            self.client.publish(topic, payload, qos, retain)
+            return self.publish(topic, payload, qos, retain)
 
-    async def async_subscribe(self, topic: str, msg_callback: MessageCallbackType, qos: int, encoding: str) -> Callable[[], None]:
-        """Set up a subscription to a topic with the provided qos.This method is a coroutine."""
+    def publish(self, topic: str, payload: PublishPayloadType, qos: int = DEFAULT_QOS, retain: bool = False) -> int:
+        """Publish a MQTT message."""
+
+        if self.connected:
+            _LOGGER.debug(f"Publishing to {topic}")
+            result, message_id = self.client.publish(topic, payload, qos, retain)
+            _raise_on_error(result)
+            return message_id
+
+    async def async_subscribe(self, topic: str, msg_callback: MessageCallbackType, qos: int = DEFAULT_QOS, encoding: str = 'utf-8') -> Callable[[], None]:
+        """Set up a subscription to a topic with the provided qos."""
+
+        async with self._lock:
+            return self.subscribe(topic, msg_callback, qos, encoding)
+
+    def subscribe(self, topic: str, msg_callback: MessageCallbackType, qos: int = DEFAULT_QOS, encoding: str = 'utf-8') -> Callable[[], None]:
+        """Set up a subscription to a topic with the provided qos."""
 
         if not isinstance(topic, str):
             raise Exception("topic needs to be a string!")
@@ -59,7 +76,7 @@ class MQTT():
         subscription = Subscription(topic, msg_callback, qos, encoding)
         self.subscriptions.append(subscription)
 
-        self._perform_subscription(topic, qos)
+        message_id = self._perform_subscription(topic, qos)
 
         def async_remove() -> None:
             """Remove subscription."""
@@ -70,30 +87,32 @@ class MQTT():
             if any(other.topic == topic for other in self.subscriptions):
                 # Other subscriptions on topic remaining - don't unsubscribe.
                 return
-            await self._async_unsubscribe(topic)
+            self._unsubscribe(topic)
 
-        return async_remove
+        return (async_remove, message_id)
 
-    def _perform_subscription(self, topic: str, qos: int) -> None:
+    def _perform_subscription(self, topic: str, qos: int) -> int:
         """Perform a paho-mqtt subscription."""
 
-        _LOGGER.debug(f"Subscribing to {topic}")
-
-        with (yield from self._lock):
-            result = self.client.subscribe(topic, qos)
+        if self.connected:
+            # _LOGGER.debug(f"Subscribing to {topic}")
+            result, message_id = self.client.subscribe(topic, qos)
             _raise_on_error(result)
+            return message_id
 
-    async def _async_unsubscribe(self, topic: str) -> None:
-        """Unsubscribe from a topic. This method is a coroutine."""
+    def _unsubscribe(self, topic: str) -> int:
+        """Unsubscribe from a topic."""
 
-        async with self._lock:
-            result = self.client.unsubscribe(topic)
+        if self.connected:
+            _LOGGER.debug(f"Unsubscribing to {topic}")
+            result, message_id = self.client.unsubscribe(topic)
             _raise_on_error(result)
+            return message_id
 
     def _mqtt_on_message(self, _mqttc, _userdata, msg) -> None:
         """Message received callback."""
 
-        _LOGGER.debug("Received message on %s: %s", msg.topic, msg.payload)
+        # _LOGGER.debug(f"Received message on { msg.topic}: {msg.payload}")
 
         for subscription in self.subscriptions:
             if not _match_topic(subscription.topic, msg.topic):
@@ -104,11 +123,8 @@ class MQTT():
                 try:
                     payload = msg.payload.decode(subscription.encoding)
                 except (AttributeError, UnicodeDecodeError):
-                    _LOGGER.warning("Can't decode payload %s on %s with encoding %s",
-                                    msg.payload, msg.topic,
-                                    subscription.encoding)
+                    _LOGGER.warning(f"Can't decode payload {msg.payload} on {msg.topic} with encoding {subscription.encoding}")
                     continue
-
             subscription.callback(msg.topic, payload, msg.qos)
 
     def _mqtt_on_connect(self, _mqttc, _userdata, _flags, result_code: int) -> None:
@@ -117,10 +133,11 @@ class MQTT():
         import paho.mqtt.client as mqtt
 
         if result_code != mqtt.CONNACK_ACCEPTED:
-            _LOGGER.error('Unable to connect to the MQTT broker: %s',
-                          mqtt.connack_string(result_code))
+            _LOGGER.error(f"Unable to connect to the MQTT broker: {mqtt.connack_string(result_code)}")
             self.client.disconnect()
             return
+
+        self.connected = True
 
         # Group subscriptions to only re-subscribe once for each topic.
         keyfunc = attrgetter('topic')
@@ -131,6 +148,9 @@ class MQTT():
 
     def _mqtt_on_disconnect(self, _mqttc, _userdata, result_code: int) -> None:
         """Disconnected callback."""
+
+        self.connected = False
+
         # When disconnected because of calling disconnect()
         if result_code == 0:
             return
@@ -146,9 +166,7 @@ class MQTT():
                 pass
 
             wait_time = min(2**tries, MAX_RECONNECT_WAIT)
-            _LOGGER.warning(
-                "Disconnected from MQTT (%s). Trying to reconnect in %s s",
-                result_code, wait_time)
+            _LOGGER.warning(f"Disconnected from MQTT ({result_code}). Trying to reconnect in {wait_time} s")
             # It is ok to sleep here as we are in the MQTT thread.
             time.sleep(wait_time)
             tries += 1
@@ -158,8 +176,7 @@ def _raise_on_error(result_code: int) -> None:
     """Raise error if error result."""
 
     if result_code != 0:
-        raise Exception(
-            f'Error talking to MQTT: {mqtt.error_string(result_code)}')
+        raise Exception(f'Error talking to MQTT: {mqtt.error_string(result_code)}')
 
 
 def _match_topic(subscription: str, topic: str) -> bool:
