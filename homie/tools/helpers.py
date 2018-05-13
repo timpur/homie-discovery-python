@@ -1,3 +1,5 @@
+"""Homie hHelper module"""
+
 from .constants import (
     DISCOVER_DEVICE_FROM_TOPIC,
     DISCOVER_NODES_FROM_PAYLOAD,
@@ -12,19 +14,31 @@ from .constants import (
 
 
 def string_to_bool(val: str):
+    """Convert a homie string bool to a python bool"""
+
     return val == STATE_ON
 
 
 def bool_to_string(val: bool):
+    """Convert a python bool to a homie string bool"""
+
     return STATE_ON if val else STATE_OFF
 
 
-def check_node_has_prop(platform: str, node, prop: str):
-    if not node.has_property(prop):
-        raise MissingNodeError(platform, node.entity_id, prop)
+def check_node_has_prop(platform: str, node, homie_property_id: str):
+    """Check a homie node has a homie property"""
+
+    if not node.has_property(homie_property_id):
+        raise MissingPropertyError(platform, node.entity_id, homie_property_id)
 
 
 def proccess_device(device_topic, device_payload):
+    """
+    Parses device discover topic into a homie device discovery result
+
+    Returns: `(supported, device_base_topic, device_id)`
+    """
+
     device_match = DISCOVER_DEVICE_FROM_TOPIC.match(device_topic)
     if device_match and device_payload == HOMIE_SUPPORTED_VERSION:
         device_base_topic = device_match.group('prefix_topic')
@@ -34,6 +48,12 @@ def proccess_device(device_topic, device_payload):
 
 
 def proccess_nodes(nodes_msg):
+    """
+    Parses `$nodes` payload into a list of node discovery results
+
+    Returns: `list[node_id]`
+    """
+
     return [_proccess_node_match(node_match) for node_match in DISCOVER_NODES_FROM_PAYLOAD.finditer(nodes_msg)]
 
 
@@ -42,6 +62,12 @@ def _proccess_node_match(node_match):
 
 
 def proccess_properties(properties_msg):
+    """
+    Parses `$properties` into a list of property discovery results
+
+    Returns: `list[(property_id, settable, range)]`
+    """
+
     return [_proccess_property_match(property_match) for property_match in DISCOVER_PROPERTIES_FROM_PAYLOAD.finditer(properties_msg)]
 
 
@@ -57,15 +83,19 @@ def _proccess_property_match(property_match):
 
 
 def can_advance_stage(target_stage, children):
+    """Helper to know if all children are at lest at a target stage of discovery"""
+
     can_advance = True
     for child in children.values():
-        if child._stage_of_discovery < target_stage:
+        if child.stage_of_discovery < target_stage:
             can_advance = False
 
     return can_advance
 
 
-class MissingNodeError(Exception):
+class MissingPropertyError(Exception):
+    """Missing Property of a Node Exception"""
+
     def __init__(self, platform_type, entity_id, property_id):
         self.platform_type = platform_type
         self.entity_id = entity_id

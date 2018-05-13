@@ -1,6 +1,8 @@
+"""Homie Discovery Base helper"""
+
+from typing import Callable
 import attr
 from .change_listner import ChangeListener
-from typing import Callable
 
 STAGE_ALL = -1
 STAGE_0 = 0
@@ -17,20 +19,30 @@ class Subscription(object):
 
 
 class HomieDiscoveryBase(ChangeListener):
+    """Homie Discovery Base heper"""
+
     def __init__(self):
         super().__init__()
 
         self._stage_of_discovery = STAGE_0
-        self._on_discovery_Subscriptions = list()
+        self._on_discovery_subscriptions = list()
 
-    def _add_on_discovery_stage_change(self, on_discovery_done, stage=STAGE_ALL):
+    def add_on_discovery_stage_change(self, on_discovery_done, stage=STAGE_ALL):
+        """Add a on discovery change subscription"""
+
         if on_discovery_done is None:
             raise Exception("")
-        self._on_discovery_Subscriptions.append(Subscription(on_discovery_done, stage))
+        self._on_discovery_subscriptions.append(Subscription(on_discovery_done, stage))
+
+    @property
+    def stage_of_discovery(self):
+        """Get stage of discovery"""
+
+        return self._stage_of_discovery
 
     def _set_discovery_stage(self, stage):
         self._stage_of_discovery = stage
-        for subscription in self._on_discovery_Subscriptions:
+        for subscription in self._on_discovery_subscriptions:
             if subscription is None:
                 Exception()
             if subscription.stage == stage or subscription.stage == STAGE_ALL:

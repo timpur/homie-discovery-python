@@ -1,17 +1,18 @@
+"""Paho MQTT wrapper for managing subscriptions module"""
+
 # Imports
-import asyncio
-import attr
+from operator import attrgetter
+from itertools import groupby
 import logging
 import socket
 import time
 import re
-from operator import attrgetter
-from itertools import groupby
+from typing import Union, Callable
+import attr
 import paho.mqtt.client as mqtt
 
 
 # Types
-from typing import Optional, Any, Union, Callable, List, cast
 from paho.mqtt.client import Client as MQTTClient
 PublishPayloadType = Union[str, bytes, int, float, None]
 SubscribePayloadType = Union[str, bytes]  # Only bytes if encoding is None
@@ -34,23 +35,20 @@ class Subscription(object):
 
 
 class MQTTWrapper():
-    """MQTT client wrapper."""
+    """
+    Paho MQTT client wrapper
+
+    Helps manage subscriptions and auto reconnect and auto resubscribe
+    """
 
     def __init__(self, mqtt_client: MQTTClient):
         self.client = mqtt_client  # type: MQTTClient
         self.subscriptions = []  # type: List[Subscription]
-        self._lock = asyncio.Lock()
         self.connected = False
 
         self.client.on_connect = self._mqtt_on_connect
         self.client.on_disconnect = self._mqtt_on_disconnect
         self.client.on_message = self._mqtt_on_message
-
-    async def async_publish(self, topic: str, payload: PublishPayloadType, qos: int = DEFAULT_QOS, retain: bool = False) -> int:
-        """Publish a MQTT message."""
-
-        async with self._lock:
-            return self.publish(topic, payload, qos, retain)
 
     def publish(self, topic: str, payload: PublishPayloadType, qos: int = DEFAULT_QOS, retain: bool = False) -> int:
         """Publish a MQTT message."""
@@ -60,12 +58,6 @@ class MQTTWrapper():
             result, message_id = self.client.publish(topic, payload, qos, retain)
             _raise_on_error(result)
             return message_id
-
-    async def async_subscribe(self, topic: str, msg_callback: MessageCallbackType, qos: int = DEFAULT_QOS, encoding: str = 'utf-8') -> Callable[[], None]:
-        """Set up a subscription to a topic with the provided qos."""
-
-        async with self._lock:
-            return self.subscribe(topic, msg_callback, qos, encoding)
 
     def subscribe(self, topic: str, msg_callback: MessageCallbackType, qos: int = DEFAULT_QOS, encoding: str = 'utf-8') -> Callable[[], None]:
         """Set up a subscription to a topic with the provided qos."""
@@ -129,8 +121,6 @@ class MQTTWrapper():
 
     def _mqtt_on_connect(self, _mqttc, _userdata, _flags, result_code: int) -> None:
         """On connect callback. Resubscribe to all topics we were subscribed to and publish birth message."""
-
-        import paho.mqtt.client as mqtt
 
         if result_code != mqtt.CONNACK_ACCEPTED:
             _LOGGER.error(f"Unable to connect to the MQTT broker: {mqtt.connack_string(result_code)}")

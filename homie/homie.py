@@ -1,21 +1,29 @@
+""" Homie Discovery module """
+
 import logging
 
 from .paho_mqtt_client_manager import (MQTTWrapper, MessageCallbackType)
-from .tools import (constants, helpers, STAGE_1, STAGE_2)
-from .models import (HomieDevice, HomieNode)
+from .tools import (constants, helpers, STAGE_1)
+from .models import (HomieDevice)
 
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class Homie(object):
+    """
+    Homie Discovery controller class
+
+    Use `start` to start the discovery proccess
+    """
+
     def __init__(self, mqtt: MQTTWrapper, discovery_prefix: str=None, qos: int=None, STATE_UNKNOWN=None):
         super().__init__()
         self.mqtt = mqtt
         self.discovery_prefix = discovery_prefix or constants.DEFAULT_DISCOVERY_PREFIX
         self.qos = qos or constants.DEFAULT_QOS
 
-        self._DEVICES = dict()
+        self._homie_devices = dict()
         self._on_device_discovery = None
         self._on_node_discovery = None
         self._on_property_discovery = None
@@ -32,39 +40,40 @@ class Homie(object):
     def _discover_devices(self):
         def _on_discovery_device(topic: str, payload: str, msg_qos: int):
             supported, device_base_topic, device_id = helpers.proccess_device(topic, payload)
-            if supported and device_id not in self._DEVICES:
-                device = HomieDevice(device_base_topic, device_id)
-                device._add_on_discovery_stage_change(self._on_device_stage_change)
-                device._setup(self._subscribe, self._publish)
-                self._DEVICES[device_id] = device
+            if supported and device_id not in self._homie_devices:
+                homie_device = HomieDevice(device_base_topic, device_id)
+                homie_device.add_on_discovery_stage_change(self._on_device_stage_change)
+                homie_device.setup(self._subscribe, self._publish)
+                self._homie_devices[device_id] = homie_device
 
         self._subscribe(f'{self.discovery_prefix}/+/$homie', _on_discovery_device, self.qos)
 
-    def _on_device_stage_change(self, device, state):
+    def _on_device_stage_change(self, homie_device, state):
         if state == STAGE_1:
-            for node in device.nodes.values():
-                def _on_node_ready(node, stage):
+            for homie_node in homie_device.nodes.values():
+                def _on_node_ready(homie_node, stage):
                     if self._on_node_discovery:
-                        self._on_node_discovery(node, stage)
-                node._add_on_discovery_stage_change(_on_node_ready)
-                _on_node_ready(node, node._stage_of_discovery)
+                        self._on_node_discovery(homie_node, stage)
+                homie_node.add_on_discovery_stage_change(_on_node_ready)
+                _on_node_ready(homie_node, homie_node.stage_of_discovery)
 
-                for property in node.properties.values():
-                    def _on_property_ready(property, stage):
+                for homie_property in homie_node.properties.values():
+                    def _on_property_ready(homie_property, stage):
                         if self._on_property_discovery:
-                            self._on_property_discovery(property, stage)
-                    property._add_on_discovery_stage_change(_on_property_ready)
-                    _on_property_ready(property, property._stage_of_discovery)
+                            self._on_property_discovery(homie_property, stage)
+                    homie_property.add_on_discovery_stage_change(_on_property_ready)
+                    _on_property_ready(homie_property, homie_property.stage_of_discovery)
 
         if self._on_device_discovery:
-            self._on_device_discovery(device, state)
+            self._on_device_discovery(homie_device, state)
 
     @property
     def devices(self):
         """Return the list of discovered device."""
-        return self._DEVICES.values()
+        return self._homie_devices.values()
 
     def start(self):
+        """Start the discovery proccess of a homie network"""
         _LOGGER.info(f"Homie has started discovering devices at {self.discovery_prefix}")
         self._discover_devices()
 

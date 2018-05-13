@@ -1,3 +1,5 @@
+"""Homie Node module"""
+
 import logging
 
 from ..tools import (constants, helpers, HomieDiscoveryBase, STAGE_0, STAGE_1, STAGE_2)
@@ -7,7 +9,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class HomieNode(HomieDiscoveryBase):
-    # A definition of a Homie Node
+    """A definition of a Homie Node"""
+
     def __init__(self, device, base_topic: str, node_id: str):
         super().__init__()
         _LOGGER.info(f"Homie Node Discovered. ID: {node_id}")
@@ -20,21 +23,26 @@ class HomieNode(HomieDiscoveryBase):
 
         self._type = constants.STATE_UNKNOWN
 
-    def _setup(self, subscribe, publish):
+    def setup(self, subscribe, publish):
+        """
+        Setup the device node
+
+        This start the discovery proccess of properties
+        """
         self._discover_properties(subscribe, publish)
 
     def _discover_properties(self, subscribe, publish):
-        def on_discovery_properties(topic: str, payload: str, msg_qos: int):
+        def _on_discovery_properties(topic: str, payload: str, msg_qos: int):
             for property_id, property_settable, property_range in helpers.proccess_properties(payload):
                 if property_id not in self._properties:
-                    property = HomieProperty(self, self._prefix_topic, property_id, property_settable, property_range)
-                    property._add_on_discovery_stage_change(self._check_discovery_done)
-                    property._setup(subscribe, publish)
-                    self._properties[property_id] = property
+                    homie_property = HomieProperty(self, self._prefix_topic, property_id, property_settable, property_range)
+                    homie_property.add_on_discovery_stage_change(self._check_discovery_done)
+                    homie_property.setup(subscribe, publish)
+                    self._properties[property_id] = homie_property
 
-        subscribe(f'{self._prefix_topic}/$properties', on_discovery_properties)
+        subscribe(f'{self._prefix_topic}/$properties', _on_discovery_properties)
 
-    def _check_discovery_done(self, property=None, stage=None):
+    def _check_discovery_done(self, homie_property=None, stage=None):
         current_stage = self._stage_of_discovery
         if current_stage == STAGE_0:
             if helpers.can_advance_stage(STAGE_1, self._properties):
@@ -47,8 +55,8 @@ class HomieNode(HomieDiscoveryBase):
         if self._prefix_topic not in topic:
             return None
 
-        for property in self._properties.values():
-            property._update(topic, payload, qos)
+        for homie_property in self._properties.values():
+            homie_property._update(topic, payload, qos)
 
         topic = topic.replace(self._prefix_topic, '')
 
@@ -84,13 +92,13 @@ class HomieNode(HomieDiscoveryBase):
         """Return a Dict of properties for the node."""
         return self._properties
 
-    def has_property(self, property_name: str):
+    def has_property(self, property_id: str):
         """Return a specific Property for the node."""
-        return property_name in self._properties
+        return property_id in self._properties
 
-    def get_property(self, property_name: str):
+    def get_property(self, property_id: str):
         """Return a specific Property for the node."""
-        return self._properties[property_name]
+        return self._properties[property_id]
 
     @property
     def device(self):

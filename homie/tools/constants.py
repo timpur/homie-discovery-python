@@ -1,3 +1,5 @@
+"""Homie Constants module"""
+
 import re
 
 
@@ -33,5 +35,7 @@ STATE_OFF = 'false'
 
 
 def set_state_unknown(value):
+    """set the value of the unknown state value"""
+
     global STATE_UNKNOWN
     STATE_UNKNOWN = value

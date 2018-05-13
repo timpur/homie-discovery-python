@@ -1,12 +1,15 @@
+"""Homie Property module"""
+
 import logging
 
-from ..tools import (constants, helpers, HomieDiscoveryBase, STAGE_1, STAGE_2)
+from ..tools import (constants, HomieDiscoveryBase, STAGE_2)
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class HomieProperty(HomieDiscoveryBase):
-    # A definition of a Homie Property
+    """A definition of a Homie Property"""
+
     def __init__(self, node, base_topic: str, property_id: str, settable: bool, ranges: tuple):
         super().__init__()
         _LOGGER.info(f"Homie Property Discovered. ID: {property_id}")
@@ -16,10 +19,13 @@ class HomieProperty(HomieDiscoveryBase):
         self._settable = settable
         self._range = ranges
         self._prefix_topic = f'{base_topic}/{property_id}'
+        self._publish = None
 
         self._state = constants.STATE_UNKNOWN
 
-    def _setup(self, subscribe, publish):
+    def setup(self, subscribe, publish):
+        """Setup the node property"""
+
         self._publish = publish
         self._set_discovery_stage(STAGE_2)
 
@@ -61,23 +67,3 @@ class HomieProperty(HomieDiscoveryBase):
     def entity_id(self):
         """Return the ID of the entity."""
         return f"{self.node.entity_id}_{self.property_id}"
-
-    # @property
-    # def name(self):
-    #     """Return the Name of the Property."""
-    #     return self._name
-
-    # @property
-    # def unit(self):
-    #     """Return the Unit for the Property."""
-    #     return self._unit
-
-    # @property
-    # def dataType(self):
-    #     """Return the Data Type for the Property."""
-    #     return self._datatype
-
-    # @property
-    # def format(self):
-    #     """Return the Format for the Property."""
-    #     return self._format

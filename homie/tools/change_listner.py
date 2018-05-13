@@ -1,5 +1,13 @@
+"""Change Listener Base helper"""
+
 
 class ChangeListener(object):
+    """
+    Change Listener Base helper
+
+    This class helps you observe chages too arributes of a class
+    """
+
     def __init__(self):
         super().__init__()
         # self._listeners = list()
@@ -13,4 +21,6 @@ class ChangeListener(object):
                 action(name, previouse_value, value)
 
     def add_listener(self, action):
+        """Add a listener to object attribute value changes"""
+
         self._listeners.append(action)

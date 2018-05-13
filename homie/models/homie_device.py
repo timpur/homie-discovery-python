@@ -1,3 +1,5 @@
+"""Homie Device module"""
+
 import logging
 
 from ..tools import (constants, helpers, HomieDiscoveryBase, STAGE_0, STAGE_1, STAGE_2)
@@ -7,7 +9,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class HomieDevice(HomieDiscoveryBase):
-    # A definition of a Homie Device
+    """A definition of a Homie Device"""
+
     def __init__(self, base_topic: str, device_id: str):
         super().__init__()
         _LOGGER.info(f"Homie Device Discovered. ID: {device_id}")
@@ -30,25 +33,30 @@ class HomieDevice(HomieDiscoveryBase):
         self._fw_checksum = constants.STATE_UNKNOWN
         self._implementation = constants.STATE_UNKNOWN
 
-    def _setup(self, subscribe, publish):
-        self._discover_nodes(subscribe, publish)
+    def setup(self, subscribe, publish):
+        """
+        Setup of the Homie Device
 
-        def on_discovery_stage_1(device, stage):
-            subscribe(f'{self._prefix_topic}/#', self._update)
-        self._add_on_discovery_stage_change(on_discovery_stage_1, STAGE_1)
+        This will start the discovery proccess of nodes
+
+        Once dicovery proccess of children has compleeted (aka. device is `STAGE_1`),
+        discovery of all attributes takes place
+        """
+        self._discover_nodes(subscribe, publish)
+        self.add_on_discovery_stage_change(lambda _, stage: subscribe(f'{self._prefix_topic}/#', self._update), STAGE_1)
 
     def _discover_nodes(self, subscribe, publish):
-        def on_discovery_nodes(topic: str, payload: str, msg_qos: int):
+        def _on_discovery_nodes(topic: str, payload: str, msg_qos: int):
             for node_id in helpers.proccess_nodes(payload):
                 if node_id not in self._nodes:
-                    node = HomieNode(self, self._prefix_topic, node_id)
-                    node._add_on_discovery_stage_change(self._check_discovery_done)
-                    node._setup(subscribe, publish)
-                    self._nodes[node_id] = node
+                    homie_node = HomieNode(self, self._prefix_topic, node_id)
+                    homie_node.add_on_discovery_stage_change(self._check_discovery_done)
+                    homie_node.setup(subscribe, publish)
+                    self._nodes[node_id] = homie_node
 
-        subscribe(f'{self._prefix_topic}/$nodes', on_discovery_nodes)
+        subscribe(f'{self._prefix_topic}/$nodes', _on_discovery_nodes)
 
-    def _check_discovery_done(self, property=None, stage=None):
+    def _check_discovery_done(self, homie_node=None, stage=None):
         current_stage = self._stage_of_discovery
         if current_stage == STAGE_0:
             if helpers.can_advance_stage(STAGE_1, self._nodes):
@@ -61,8 +69,8 @@ class HomieDevice(HomieDiscoveryBase):
         if self._prefix_topic not in topic:
             return None
 
-        for node in self._nodes.values():
-            node._update(topic, payload, qos)
+        for homie_node in self._nodes.values():
+            homie_node._update(topic, payload, qos)
 
         topic = topic.replace(self._prefix_topic, '')
 

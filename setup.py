@@ -1,8 +1,10 @@
+"""Homie setup script."""
+
 from setuptools import setup
 
 setup(
     name='Homie',
-    version='0.2.1',
+    version='0.2.2',
     description='Homie Discovery Controller',
     url='https://github.com/timpur/homie-discovery-python',
     author='Tim Purchas',
