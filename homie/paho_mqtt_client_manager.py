@@ -19,7 +19,6 @@ SubscribePayloadType = Union[str, bytes]  # Only bytes if encoding is None
 MessageCallbackType = Callable[[str, SubscribePayloadType, int], None]
 
 # Consts
-DEFAULT_QOS = 0
 MAX_RECONNECT_WAIT = 300  # seconds
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,7 +49,7 @@ class MQTTWrapper():
         self.client.on_disconnect = self._mqtt_on_disconnect
         self.client.on_message = self._mqtt_on_message
 
-    def publish(self, topic: str, payload: PublishPayloadType, qos: int = DEFAULT_QOS, retain: bool = False) -> int:
+    def publish(self, topic: str, payload: PublishPayloadType, qos: int, retain: bool = False) -> int:
         """Publish a MQTT message."""
 
         if self.connected:
@@ -59,7 +58,7 @@ class MQTTWrapper():
             _raise_on_error(result)
             return message_id
 
-    def subscribe(self, topic: str, msg_callback: MessageCallbackType, qos: int = DEFAULT_QOS, encoding: str = 'utf-8') -> Callable[[], None]:
+    def subscribe(self, topic: str, msg_callback: MessageCallbackType, qos: int, encoding: str = 'utf-8') -> Callable[[], None]:
         """Set up a subscription to a topic with the provided qos."""
 
         if not isinstance(topic, str):
