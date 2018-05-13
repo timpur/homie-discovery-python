@@ -36,13 +36,13 @@ class HomieNode(HomieDiscoveryBase):
             for property_id, property_settable, property_range in helpers.proccess_properties(payload):
                 if property_id not in self._properties:
                     homie_property = HomieProperty(self, self._prefix_topic, property_id, property_settable, property_range)
-                    homie_property.add_on_discovery_stage_change(self._check_discovery_done)
+                    homie_property.add_on_discovery_stage_change(self._check_discovery_stage)
                     homie_property.setup(subscribe, publish)
                     self._properties[property_id] = homie_property
 
         subscribe(f'{self._prefix_topic}/$properties', _on_discovery_properties)
 
-    def _check_discovery_done(self, homie_property=None, stage=None):
+    def _check_discovery_stage(self, homie_property=None, stage=None):
         current_stage = self._stage_of_discovery
         if current_stage == STAGE_0:
             if helpers.can_advance_stage(STAGE_1, self._properties):
@@ -65,7 +65,7 @@ class HomieNode(HomieDiscoveryBase):
 
         # Ready
         if topic == '/$type':
-            self._check_discovery_done()
+            self._check_discovery_stage()
 
     @property
     def base_topic(self):

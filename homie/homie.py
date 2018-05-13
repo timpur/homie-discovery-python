@@ -50,14 +50,14 @@ class Homie(object):
 
     def _on_device_stage_change(self, homie_device, state):
         if state == STAGE_1:
-            for homie_node in homie_device.nodes.values():
+            for homie_node in homie_device.nodes:
                 def _on_node_ready(homie_node, stage):
                     if self._on_node_discovery:
                         self._on_node_discovery(homie_node, stage)
                 homie_node.add_on_discovery_stage_change(_on_node_ready)
                 _on_node_ready(homie_node, homie_node.stage_of_discovery)
 
-                for homie_property in homie_node.properties.values():
+                for homie_property in homie_node.properties:
                     def _on_property_ready(homie_property, stage):
                         if self._on_property_discovery:
                             self._on_property_discovery(homie_property, stage)

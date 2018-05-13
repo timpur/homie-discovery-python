@@ -50,13 +50,13 @@ class HomieDevice(HomieDiscoveryBase):
             for node_id in helpers.proccess_nodes(payload):
                 if node_id not in self._nodes:
                     homie_node = HomieNode(self, self._prefix_topic, node_id)
-                    homie_node.add_on_discovery_stage_change(self._check_discovery_done)
+                    homie_node.add_on_discovery_stage_change(self._check_discovery_stage)
                     homie_node.setup(subscribe, publish)
                     self._nodes[node_id] = homie_node
 
         subscribe(f'{self._prefix_topic}/$nodes', _on_discovery_nodes)
 
-    def _check_discovery_done(self, homie_node=None, stage=None):
+    def _check_discovery_stage(self, homie_node=None, stage=None):
         current_stage = self._stage_of_discovery
         if current_stage == STAGE_0:
             if helpers.can_advance_stage(STAGE_1, self._nodes):
@@ -108,7 +108,7 @@ class HomieDevice(HomieDiscoveryBase):
 
         # Ready
         if topic == '/$online':
-            self._check_discovery_done()
+            self._check_discovery_stage()
 
     @property
     def base_topic(self):
