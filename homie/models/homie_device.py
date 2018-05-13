@@ -1,8 +1,6 @@
 import logging
 
-from tools.homie_discovery_base import (HomieDiscoveryBase, STAGE_0, STAGE_1, STAGE_2)
-from tools.constants import STATE_UNKNOWN
-from tools import helpers
+from ..tools import (constants, helpers, HomieDiscoveryBase, STAGE_0, STAGE_1, STAGE_2)
 from .homie_node import HomieNode
 
 _LOGGER = logging.getLogger(__name__)
@@ -19,18 +17,18 @@ class HomieDevice(HomieDiscoveryBase):
 
         self._nodes = dict()
 
-        self._convention_version = STATE_UNKNOWN
-        self._online = STATE_UNKNOWN
-        self._name = STATE_UNKNOWN
-        self._ip = STATE_UNKNOWN
-        self._mac = STATE_UNKNOWN
-        self._uptime = STATE_UNKNOWN
-        self._signal = STATE_UNKNOWN
-        self._stats_interval = STATE_UNKNOWN
-        self._fw_name = STATE_UNKNOWN
-        self._fw_version = STATE_UNKNOWN
-        self._fw_checksum = STATE_UNKNOWN
-        self._implementation = STATE_UNKNOWN
+        self._convention_version = constants.STATE_UNKNOWN
+        self._online = constants.STATE_UNKNOWN
+        self._name = constants.STATE_UNKNOWN
+        self._ip = constants.STATE_UNKNOWN
+        self._mac = constants.STATE_UNKNOWN
+        self._uptime = constants.STATE_UNKNOWN
+        self._signal = constants.STATE_UNKNOWN
+        self._stats_interval = constants.STATE_UNKNOWN
+        self._fw_name = constants.STATE_UNKNOWN
+        self._fw_version = constants.STATE_UNKNOWN
+        self._fw_checksum = constants.STATE_UNKNOWN
+        self._implementation = constants.STATE_UNKNOWN
 
     def _setup(self, subscribe, publish):
         self._discover_nodes(subscribe, publish)
@@ -56,7 +54,7 @@ class HomieDevice(HomieDiscoveryBase):
             if helpers.can_advance_stage(STAGE_1, self._nodes):
                 self._set_discovery_stage(STAGE_1)
         if current_stage == STAGE_1:
-            if helpers.can_advance_stage(STAGE_2, self._nodes) and self._online is not STATE_UNKNOWN:
+            if helpers.can_advance_stage(STAGE_2, self._nodes) and self._online is not constants.STATE_UNKNOWN:
                 self._set_discovery_stage(STAGE_2)
 
     def _update(self, topic: str, payload: str, qos: int):

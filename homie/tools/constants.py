@@ -28,3 +28,10 @@ PROP_RGB = 'rgb'
 STATE_UNKNOWN = 'unknown'
 STATE_ON = 'true'
 STATE_OFF = 'false'
+
+# Functions
+
+
+def set_state_unknown(value):
+    global STATE_UNKNOWN
+    STATE_UNKNOWN = value

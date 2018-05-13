@@ -1,8 +1,6 @@
 import logging
 
-from tools.homie_discovery_base import (HomieDiscoveryBase, STAGE_1, STAGE_2)
-from tools.constants import STATE_UNKNOWN
-from tools import helpers
+from ..tools import (constants, helpers, HomieDiscoveryBase, STAGE_1, STAGE_2)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -19,7 +17,7 @@ class HomieProperty(HomieDiscoveryBase):
         self._range = ranges
         self._prefix_topic = f'{base_topic}/{property_id}'
 
-        self._state = STATE_UNKNOWN
+        self._state = constants.STATE_UNKNOWN
 
     def _setup(self, subscribe, publish):
         self._publish = publish

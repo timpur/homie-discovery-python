@@ -1,8 +1,6 @@
 import logging
 
-from tools.homie_discovery_base import (HomieDiscoveryBase, STAGE_0, STAGE_1, STAGE_2)
-from tools.constants import STATE_UNKNOWN
-from tools import helpers
+from ..tools import (constants, helpers, HomieDiscoveryBase, STAGE_0, STAGE_1, STAGE_2)
 from .homie_property import HomieProperty
 
 _LOGGER = logging.getLogger(__name__)
@@ -20,7 +18,7 @@ class HomieNode(HomieDiscoveryBase):
 
         self._properties = dict()
 
-        self._type = STATE_UNKNOWN
+        self._type = constants.STATE_UNKNOWN
 
     def _setup(self, subscribe, publish):
         self._discover_properties(subscribe, publish)
@@ -42,7 +40,7 @@ class HomieNode(HomieDiscoveryBase):
             if helpers.can_advance_stage(STAGE_1, self._properties):
                 self._set_discovery_stage(STAGE_1)
         if current_stage == STAGE_1:
-            if helpers.can_advance_stage(STAGE_2, self._properties) and self._type is not STATE_UNKNOWN:
+            if helpers.can_advance_stage(STAGE_2, self._properties) and self._type is not constants.STATE_UNKNOWN:
                 self._set_discovery_stage(STAGE_2)
 
     def _update(self, topic: str, payload: str, qos: int):

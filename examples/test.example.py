@@ -1,6 +1,6 @@
 import logging
 import paho.mqtt.client as mqtt
-from paho_mqtt_client_manager import MQTTWrapper
+from homie.paho_mqtt_client_manager import MQTTWrapper
 from homie import Homie
 
 logging.basicConfig(level=logging.DEBUG)

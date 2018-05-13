@@ -1,10 +1,8 @@
 import logging
 
-from paho_mqtt_client_manager import (MQTTWrapper, MessageCallbackType)
-from tools import helpers
-from tools.homie_discovery_base import (STAGE_1, STAGE_2)
-from modals.homie_device import HomieDevice
-from modals.homie_node import HomieNode
+from .paho_mqtt_client_manager import (MQTTWrapper, MessageCallbackType)
+from .tools import helpers, STAGE_1, STAGE_2
+from .models import HomieDevice, HomieNode
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -23,8 +21,8 @@ class Homie(object):
         self._on_property_discovery = None
 
         if STATE_UNKNOWN is not None:
-            from tools import constants
-            constants.STATE_UNKNOWN = STATE_UNKNOWN
+            from .tools import constants
+            constants.set_state_unknown(STATE_UNKNOWN)
 
     def _subscribe(self, topic: str, msg_callback: MessageCallbackType, qos: int=None):
         self.mqtt.subscribe(topic, msg_callback, qos or self.qos)

@@ -78,7 +78,7 @@ class MQTTWrapper():
 
         message_id = self._perform_subscription(topic, qos)
 
-        def async_remove() -> None:
+        def remove() -> None:
             """Remove subscription."""
             if subscription not in self.subscriptions:
                 raise Exception("Can't remove subscription twice")
@@ -89,7 +89,7 @@ class MQTTWrapper():
                 return
             self._unsubscribe(topic)
 
-        return (async_remove, message_id)
+        return (remove, message_id)
 
     def _perform_subscription(self, topic: str, qos: int) -> int:
         """Perform a paho-mqtt subscription."""
