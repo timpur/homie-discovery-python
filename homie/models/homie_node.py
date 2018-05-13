@@ -85,12 +85,12 @@ class HomieNode(HomieDiscoveryBase):
     @property
     def is_setup(self):
         """Return True if the Node has been setup as a component"""
-        return self._is_setup
+        return self.stage_of_discovery >= STAGE_2
 
     @property
     def properties(self):
-        """Return a Dict of properties for the node."""
-        return self._properties
+        """Return a List of properties for the node."""
+        return self._properties.values()
 
     def has_property(self, property_id: str):
         """Return a specific Property for the node."""

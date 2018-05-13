@@ -178,12 +178,12 @@ class HomieDevice(HomieDiscoveryBase):
     @property
     def is_setup(self):
         """Return True if the Device has been setup as a component"""
-        return self._is_setup
+        return self.stage_of_discovery >= STAGE_2
 
     @property
     def nodes(self):
-        """Return a Dict of Nodes for the device."""
-        return self._nodes
+        """Return a List of Nodes for the device."""
+        return self._nodes.values()
 
     def node(self, node_id):
         """Return a specific Node for the device."""

@@ -77,14 +77,14 @@ class Homie(object):
         _LOGGER.info(f"Homie has started discovering devices at {self.discovery_prefix}")
         self._discover_devices()
 
-    def on_device_discovery(self, on_device_discovery):
+    def set_on_device_discovery(self, on_device_discovery):
         """ Set Listner for when a device has been discovered"""
         self._on_device_discovery = on_device_discovery
 
-    def on_node_discovery(self, on_node_discovery):
+    def set_on_node_discovery(self, on_node_discovery):
         """ Set Listner for when a node has been discovered"""
         self._on_node_discovery = on_node_discovery
 
-    def on_property_discovery(self, on_property_discovery):
+    def set_on_property_discovery(self, on_property_discovery):
         """ Set Listner for when a property has been discovered"""
         self._on_property_discovery = on_property_discovery
