@@ -1,8 +1,9 @@
 """Homie Discovery Base helper"""
 
+import types
 from typing import Callable
 import attr
-from .change_listner import ChangeListener
+from .change_listner import AttributeChangeListener
 
 STAGE_ALL = -1
 STAGE_0 = 0
@@ -18,7 +19,7 @@ class Subscription(object):
     stage = attr.ib(type=int, default=-1)
 
 
-class HomieDiscoveryBase(ChangeListener):
+class HomieDiscoveryBase(AttributeChangeListener):
     """Homie Discovery Base heper"""
 
     def __init__(self):
@@ -27,12 +28,12 @@ class HomieDiscoveryBase(ChangeListener):
         self._stage_of_discovery = STAGE_0
         self._on_discovery_subscriptions = list()
 
-    def add_on_discovery_stage_change(self, on_discovery_done, stage=STAGE_ALL):
+    def add_on_discovery_stage_change(self, on_discovery_stage, stage=STAGE_ALL):
         """Add a on discovery change subscription"""
 
-        if on_discovery_done is None:
-            raise Exception("")
-        self._on_discovery_subscriptions.append(Subscription(on_discovery_done, stage))
+        if not isinstance(on_discovery_stage, types.FunctionType) and not isinstance(on_discovery_stage, types.MethodType):
+            raise Exception(f"on_discovery_stage must be a function")
+        self._on_discovery_subscriptions.append(Subscription(on_discovery_stage, stage))
 
     @property
     def stage_of_discovery(self):
@@ -43,7 +44,5 @@ class HomieDiscoveryBase(ChangeListener):
     def _set_discovery_stage(self, stage):
         self._stage_of_discovery = stage
         for subscription in self._on_discovery_subscriptions:
-            if subscription is None:
-                Exception()
             if subscription.stage == stage or subscription.stage == STAGE_ALL:
                 subscription.callback(self, stage)
