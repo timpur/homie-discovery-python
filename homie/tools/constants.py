@@ -7,9 +7,9 @@ DISCOVER_NODES_FROM_PAYLOAD = re.compile(r'(?P<node_id>\w[-/\w]*\w)')
 DISCOVER_PROPERTIES_FROM_PAYLOAD = re.compile(r'(?P<property_id>\w[-/\w]*\w)(\[(?P<range_start>[0-9])-(?P<range_end>[0-9]+)\])?(?P<settable>:settable)?')
 
 # Global
-HOMIE_SUPPORTED_VERSION = '2.0.1'
 DEFAULT_DISCOVERY_PREFIX = 'homie'
-DEFAULT_QOS = 0
+HOMIE_SUPPORTED_VERSION = '2.0.1'
+DEFAULT_QOS = 1
 
 # Types
 TYPE_SENSOR = "sensor"

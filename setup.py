@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='Homie',
-    version='0.2.0',
+    version='0.2.1',
     description='Homie Discovery Controller',
     url='https://github.com/timpur/homie-discovery-python',
     author='Tim Purchas',
