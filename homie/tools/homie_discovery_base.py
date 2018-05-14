@@ -16,7 +16,7 @@ class Subscription(object):
     """Class to hold data about an active subscription."""
 
     callback = attr.ib(type=Callable[[object, int], None])
-    stage = attr.ib(type=int, default=-1)
+    stage = attr.ib(type=int)
 
 
 class HomieDiscoveryBase(AttributeChangeListener):

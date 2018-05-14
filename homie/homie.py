@@ -72,6 +72,14 @@ class Homie(object):
         """Return the list of discovered device."""
         return self._homie_devices.values()
 
+    def get_device(self, device_id: str):
+        """Return the list of discovered device."""
+        return self._homie_devices[device_id]
+
+    def has_device(self, device_id: str):
+        """Return True if specific Device exists in the Homie Network."""
+        return device_id in self._homie_devices
+
     def start(self):
         """Start the discovery proccess of a homie network"""
         _LOGGER.info(f"Homie has started discovering devices at {self.discovery_prefix}")

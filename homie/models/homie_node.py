@@ -19,7 +19,7 @@ class HomieNode(HomieDiscoveryBase):
         self._node_id = node_id
         self._prefix_topic = f'{base_topic}/{node_id}'
 
-        self._properties = dict()
+        self._homie_properties = dict()
 
         self._type = constants.STATE_UNKNOWN
 
@@ -34,28 +34,28 @@ class HomieNode(HomieDiscoveryBase):
     def _discover_properties(self, subscribe, publish):
         def _on_discovery_properties(topic: str, payload: str, msg_qos: int):
             for property_id, property_settable, property_range in helpers.proccess_properties(payload):
-                if property_id not in self._properties:
+                if property_id not in self._homie_properties:
                     homie_property = HomieProperty(self, self._prefix_topic, property_id, property_settable, property_range)
                     homie_property.add_on_discovery_stage_change(self._check_discovery_stage)
                     homie_property.setup(subscribe, publish)
-                    self._properties[property_id] = homie_property
+                    self._homie_properties[property_id] = homie_property
 
         subscribe(f'{self._prefix_topic}/$properties', _on_discovery_properties)
 
     def _check_discovery_stage(self, homie_property=None, stage=None):
         current_stage = self._stage_of_discovery
         if current_stage == STAGE_0:
-            if helpers.can_advance_stage(STAGE_1, self._properties):
+            if helpers.can_advance_stage(STAGE_1, self._homie_properties):
                 self._set_discovery_stage(STAGE_1)
         if current_stage == STAGE_1:
-            if helpers.can_advance_stage(STAGE_2, self._properties) and self._type is not constants.STATE_UNKNOWN:
+            if helpers.can_advance_stage(STAGE_2, self._homie_properties) and self._type is not constants.STATE_UNKNOWN:
                 self._set_discovery_stage(STAGE_2)
 
     def _update(self, topic: str, payload: str, qos: int):
         if self._prefix_topic not in topic:
             return None
 
-        for homie_property in self._properties.values():
+        for homie_property in self._homie_properties.values():
             homie_property._update(topic, payload, qos)
 
         topic = topic.replace(self._prefix_topic, '')
@@ -90,15 +90,15 @@ class HomieNode(HomieDiscoveryBase):
     @property
     def properties(self):
         """Return a List of properties for the node."""
-        return self._properties.values()
-
-    def has_property(self, property_id: str):
-        """Return a specific Property for the node."""
-        return property_id in self._properties
+        return self._homie_properties.values()
 
     def get_property(self, property_id: str):
         """Return a specific Property for the node."""
-        return self._properties[property_id]
+        return self._homie_properties[property_id]
+
+    def has_property(self, property_id: str):
+        """Return True if specific Property for the node exists."""
+        return property_id in self._homie_properties
 
     @property
     def device(self):

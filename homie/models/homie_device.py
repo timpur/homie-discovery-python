@@ -18,7 +18,7 @@ class HomieDevice(HomieDiscoveryBase):
         self._device_id = device_id
         self._prefix_topic = f'{base_topic}/{device_id}'
 
-        self._nodes = dict()
+        self._homie_nodes = dict()
 
         self._convention_version = constants.STATE_UNKNOWN
         self._online = constants.STATE_UNKNOWN
@@ -48,28 +48,28 @@ class HomieDevice(HomieDiscoveryBase):
     def _discover_nodes(self, subscribe, publish):
         def _on_discovery_nodes(topic: str, payload: str, msg_qos: int):
             for node_id in helpers.proccess_nodes(payload):
-                if node_id not in self._nodes:
+                if node_id not in self._homie_nodes:
                     homie_node = HomieNode(self, self._prefix_topic, node_id)
                     homie_node.add_on_discovery_stage_change(self._check_discovery_stage)
                     homie_node.setup(subscribe, publish)
-                    self._nodes[node_id] = homie_node
+                    self._homie_nodes[node_id] = homie_node
 
         subscribe(f'{self._prefix_topic}/$nodes', _on_discovery_nodes)
 
     def _check_discovery_stage(self, homie_node=None, stage=None):
         current_stage = self._stage_of_discovery
         if current_stage == STAGE_0:
-            if helpers.can_advance_stage(STAGE_1, self._nodes):
+            if helpers.can_advance_stage(STAGE_1, self._homie_nodes):
                 self._set_discovery_stage(STAGE_1)
         if current_stage == STAGE_1:
-            if helpers.can_advance_stage(STAGE_2, self._nodes) and self._online is not constants.STATE_UNKNOWN:
+            if helpers.can_advance_stage(STAGE_2, self._homie_nodes) and self._online is not constants.STATE_UNKNOWN:
                 self._set_discovery_stage(STAGE_2)
 
     def _update(self, topic: str, payload: str, qos: int):
         if self._prefix_topic not in topic:
             return None
 
-        for homie_node in self._nodes.values():
+        for homie_node in self._homie_nodes.values():
             homie_node._update(topic, payload, qos)
 
         topic = topic.replace(self._prefix_topic, '')
@@ -183,11 +183,15 @@ class HomieDevice(HomieDiscoveryBase):
     @property
     def nodes(self):
         """Return a List of Nodes for the device."""
-        return self._nodes.values()
+        return self._homie_nodes.values()
 
-    def node(self, node_id):
+    def get_node(self, node_id):
         """Return a specific Node for the device."""
-        return self._nodes[node_id]
+        return self._homie_nodes[node_id]
+
+    def has_node(self, node_id: str):
+        """Return True if specific Node for the Device exists."""
+        return node_id in self._homie_nodes
 
     @property
     def entity_id(self):
